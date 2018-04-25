@@ -1,8 +1,9 @@
 {
   "name": "recl",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "RethinkDB CLI and Utility",
   "main": "dist/index.js",
+  "types": "dist/types/recl.d.ts",
   "scripts": {
     "start": "node bin/recl",
     "load": "npm run build && npm start",
@@ -23,7 +24,6 @@
     "url": "https://github.com/dsyomichev/recl/issues"
   },
   "homepage": "https://github.com/dsyomichev/recl#readme",
-  "preferGlobal": true,
   "bin": "./bin/recl",
   "dependencies": {
     "@types/cli-spinner": "^0.2.0",

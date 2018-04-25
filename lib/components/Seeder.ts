@@ -3,7 +3,6 @@ import * as path from "path";
 import * as fs from "fs";
 import * as Spinner from "cli-spinner";
 import { ReqlClient } from "rethinkdbdash";
-import { noConflict } from "bluebird";
 
 export interface database {
   name: string;
