@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+"use strict";
+
+const program = require("commander");
+const chalk = require("chalk");
+
+const { version } = require("../package.json");
+
+const run = require("../dist").default;
+
+console.log(chalk.yellow.bold(`ReCL v${version}`));
+
+program
+  .version(version)
+  .description("RethinkDB CLI Utility")
+  .option("-i, --ip <ip>", "Address of RethinkDB")
+  .option("-p, --port <port>", "Port of RethinkDB")
+  .option("-a, --auth", "Ask for username and password.");
+
+program
+  .command("seed <file>")
+  .alias("s")
+  .description("Seed the database with data from a file.")
+  .option("-H, --hard", "Clear of all databases from RethinkDB before seed.")
+  .option("-q, --quiet", "Prevent logging of queries run during seed.")
+  .action((file, { hard, quiet }) => run("seed", program, { file, quiet, hard }));
+
+program.parse(process.argv);
+
+if (program.args.length == 0) run("repl", program, {});
