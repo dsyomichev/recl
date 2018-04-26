@@ -35,9 +35,9 @@ const validate = (query: string): string | boolean => {
 
 const evaluate = async (r: ReqlClient, query: string): Promise<string> => {
   let then = Date.now();
-  let result = eval(query);
+  let result;
   try {
-    result = await result;
+    result = await eval(query);
   } catch (err) {
     return `${chalk.red(">>")} ${err.message}`;
   }

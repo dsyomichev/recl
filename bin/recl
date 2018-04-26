@@ -8,6 +8,12 @@ const { version, description } = require("../package.json");
 
 const run = require("../dist");
 
+const handleError = err => {
+  err = err instanceof Error ? err : new Error(err);
+  console.log(`${chalk.red("Error:")} ${err.message}`);
+  return;
+};
+
 console.log(chalk.yellow.bold(`ReCL v${version}`));
 
 program
@@ -24,14 +30,14 @@ program
   .description("Seed the database with data from a file.")
   .option("-s, --strong", "Clear of all databases from RethinkDB before seed.")
   .option("-q, --quiet", "Prevent logging of queries run during seed.")
-  .action((file, { strong, quiet }) => run("seed", program, { file, quiet, strong }));
+  .action((file, { strong, quiet }) => run("seed", program, { file, quiet, strong }).catch(handleError));
 
 program
   .command("repl")
   .alias("r")
   .description("Start a REPL session with RethinkDB")
-  .action(() => run("repl"));
+  .action(() => run("repl", program).catch(handleError));
 
 program.parse(process.argv);
 
-if (program.args.length == 0) run("repl");
+if (program.args.length == 0) run("repl", program).catch(handleError);

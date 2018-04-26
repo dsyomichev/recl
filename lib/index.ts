@@ -37,14 +37,19 @@ type ConnectionSettings = {
 const valid_host = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 
 const open = async ({ host = "127.0.0.1", port = 28015, user = "admin", password }: ConnectionSettings = {}): Promise<Connection> => {
+  const close = () => ReqlClient.getPoolMaster().drain();
+
   if (!host.match(valid_host)) throw new Error(`Invalid host "${host}"`);
   if (port < 0 || port > 65536) throw new Error(`Invalid port "${port}"`);
 
   let ReqlClient = dash({ silent: true, servers: [{ host, port }], user, password });
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  if (ReqlClient.getPoolMaster().getLength() < 1) throw new Error(`Unable to establish connection to "${host}:${port}" as "${user}"`);
-  return { ReqlClient, close: () => ReqlClient.getPoolMaster().drain() };
+  if (ReqlClient.getPoolMaster().getLength() < 1) {
+    close();
+    throw new Error(`Unable to establish connection to "${host}:${port}" as "${user}"`);
+  }
+  return { ReqlClient, close };
 };
 
 const defaultConfig: ConnectionSettings = { host: "127.0.0.1", port: 28015, user: "", password: "" };
@@ -67,7 +72,7 @@ const handleError = (err: string | Error): void => {
 
 const run = async (command: string, { host, port, auth, config }: GlobalOptions = {}, { quiet, strong, file }: CommandOptions = {}): Promise<void> => {
   let configs = loadConfig(config);
-  console.log(`Loaded config file ${chalk.green(config || `config.json ${chalk.cyan.bold("(Default)")}`)}`);
+  console.log(`Loaded config file ${chalk.green(config ? path.win32.basename(config) : `config.json ${chalk.cyan.bold("(Default)")}`)}`);
   host = host || configs.host || "127.0.0.1";
   port = port || configs.port || 28015;
   let user = "";
@@ -87,11 +92,11 @@ const run = async (command: string, { host, port, auth, config }: GlobalOptions 
   console.log(`Connected to RethinkDB @ ${chalk.blue.underline(`${host}:${port}`)} as ${chalk.magenta.bold(user)}`);
   switch (command) {
     case "repl":
-      await repl(ReqlClient);
+      await repl(ReqlClient).catch(handleError);
       break;
     case "seed":
       if (!file) throw new Error("Missing seeding file.");
-      await seed(ReqlClient, file, { quiet, strong });
+      await seed(ReqlClient, file, { quiet, strong }).catch(handleError);
       break;
   }
   close();
