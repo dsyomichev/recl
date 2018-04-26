@@ -24,14 +24,12 @@ function readConfigFile(configFileName) {
   const configObject = result.config;
   if (!configObject) {
     reportDiagnostics([result.error]);
-    process.exit(1);
   }
 
   // Extract config infromation
   const configParseResult = ts.parseJsonConfigFileContent(configObject, ts.sys, path.dirname(configFileName));
   if (configParseResult.errors.length > 0) {
     reportDiagnostics(configParseResult.errors);
-    process.exit(1);
   }
   return configParseResult;
 }
@@ -49,7 +47,6 @@ function compile(configFileName = "tsconfig.json") {
 
   // Return code
   const exitCode = emitResult.emitSkipped ? 1 : 0;
-  process.exit(exitCode);
 }
 
 module.exports = compile;

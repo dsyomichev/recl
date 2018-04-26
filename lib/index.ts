@@ -1,55 +1,77 @@
-import chalk from "chalk";
-import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
+import * as fs from "fs";
+
 import * as inquirer from "inquirer";
+import * as dash from "rethinkdbdash";
+import chalk from "chalk";
 
-import Connection from "./components/Connection";
-import REPL from "./components/REPL";
-import Seeder from "./components/Seeder";
-import { ReqlClient } from "rethinkdbdash";
+import * as repl from "./commands/repl";
+import * as seed from "./commands/seed";
 
-export interface GlobalOptions {
+type GlobalOptions = {
   host?: string;
   port?: number;
   auth?: boolean;
-}
+  config?: string;
+};
 
-export interface CommandOptions {
+type CommandOptions = {
   file?: string;
   quiet?: boolean;
-  hard?: boolean;
-}
+  strong?: boolean;
+};
 
-export interface Config {
-  host: string;
-  port: number;
-  user: string;
-  password: string;
-}
+type Connection = {
+  ReqlClient: dash.ReqlClient;
+  close: () => void;
+};
 
-const handleError = (err: string | Error) => {
+type ConnectionSettings = {
+  host?: string;
+  port?: number;
+  user?: string;
+  password?: string;
+};
+
+const valid_host = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
+const open = async ({ host = "127.0.0.1", port = 28015, user = "admin", password }: ConnectionSettings = {}): Promise<Connection> => {
+  if (!host.match(valid_host)) throw new Error(`Invalid host "${host}"`);
+  if (port < 0 || port > 65536) throw new Error(`Invalid port "${port}"`);
+
+  let ReqlClient = dash({ silent: true, servers: [{ host, port }], user, password });
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  if (ReqlClient.getPoolMaster().getLength() < 1) throw new Error(`Unable to establish connection to "${host}:${port}" as "${user}"`);
+  return { ReqlClient, close: () => ReqlClient.getPoolMaster().drain() };
+};
+
+const defaultConfig: ConnectionSettings = { host: "127.0.0.1", port: 28015, user: "", password: "" };
+const configDir: string = path.join(os.homedir(), ".recl");
+const configFile: string = path.join(configDir, "config.json");
+
+if (!fs.existsSync(configDir)) fs.mkdirSync(configDir);
+if (!fs.existsSync(configFile)) fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, 2));
+
+const loadConfig = (filename?: string) => {
+  if (filename) return require(path.join(process.cwd(), filename));
+  return require(configFile);
+};
+
+const handleError = (err: string | Error): void => {
   err = err instanceof Error ? err : new Error(err);
-  console.log(`${chalk.red("Error: ")}${err.message}`);
+  console.log(`${chalk.red("Error:")} ${err.message}`);
+  return;
 };
 
-const loadConfig = (filename?: string): Config => {
-  let config_dir: string = `${process.env[process.platform == "win32" ? "USERPROFILE" : "HOME"]}/.recl`;
-  let config_file: string = path.join(config_dir, "config.json");
-  let default_config: Config = { user: "", password: "", host: "127.0.0.1", port: 28015 };
-  if (!fs.existsSync(config_dir)) fs.mkdirSync(config_dir);
-  if (!fs.existsSync(config_file)) fs.writeFileSync(config_file, JSON.stringify(default_config, null, 2));
-  let config: Config = require(path.resolve(filename ? path.join(process.cwd(), filename) : config_file));
-  console.log(`Loaded config file ${chalk.red(path.win32.basename(filename || config_file))}`);
-  return config;
-};
-
-const run = async (command: string, { host, port, auth }: GlobalOptions, { file, quiet, hard }: CommandOptions): Promise<void> => {
-  const connection = new Connection();
-  let config = loadConfig();
-  host = host || config.host || "127.0.0.1";
-  port = port || config.port || 28015;
-  let user: string = "";
-  let password: string = "";
+const run = async (command: string, { host, port, auth, config }: GlobalOptions = {}, { quiet, strong, file }: CommandOptions = {}): Promise<void> => {
+  let configs = loadConfig(config);
+  console.log(`Loaded config file ${chalk.green(config || `config.json ${chalk.cyan.bold("(Default)")}`)}`);
+  host = host || configs.host || "127.0.0.1";
+  port = port || configs.port || 28015;
+  let user = "";
+  let password = "";
   if (auth) {
     let creds: { [key: string]: any } = await inquirer.prompt([
       { name: "user", message: "Username: ", prefix: "-" },
@@ -58,40 +80,22 @@ const run = async (command: string, { host, port, auth }: GlobalOptions, { file,
     user = creds.user;
     password = creds.password;
   } else {
-    if (config.user) user = config.user;
-    if (config.password) password = config.password;
+    user = configs.user || "admin";
+    password = configs.password || "";
   }
-  let reql: Promise<ReqlClient> | ReqlClient = connection.open({ host, port, user, password });
-  try {
-    reql = await reql;
-  } catch (err) {
-    handleError(err);
-    process.exit();
-    return;
-  }
-  console.log(`Connected to RethinkDB @ ${chalk.blue(`${host}:${port}`)} as ${chalk.green(user)}`);
+  let { ReqlClient, close }: Connection = await open({ host, port, user, password });
+  console.log(`Connected to RethinkDB @ ${chalk.blue.underline(`${host}:${port}`)} as ${chalk.magenta.bold(user)}`);
   switch (command) {
+    case "repl":
+      await repl(ReqlClient);
+      break;
     case "seed":
       if (!file) throw new Error("Missing seeding file.");
-      try {
-        await new Seeder().seed(reql, file, { quiet, hard });
-      } catch (err) {
-        handleError(err);
-      }
-      connection.close();
-      process.exit();
-      break;
-    case "repl":
-      try {
-        await new REPL().start(reql);
-      } catch (err) {
-        handleError(err);
-      }
-      connection.close();
-      process.exit();
+      await seed(ReqlClient, file, { quiet, strong });
       break;
   }
+  close();
   return;
 };
 
-export default run;
+export = run;
