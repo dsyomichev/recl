@@ -16,7 +16,7 @@ program
   .option("-H, --host <host>", "Address of RethinkDB")
   .option("-p, --port <port>", "Port of RethinkDB")
   .option("-a, --auth", "Ask for username and password.")
-  .option("-c, --config", "Load a custom config file.");
+  .option("-c, --config <config>", "Load a custom config file.");
 
 program
   .command("seed <file>")
@@ -25,6 +25,12 @@ program
   .option("-s, --strong", "Clear of all databases from RethinkDB before seed.")
   .option("-q, --quiet", "Prevent logging of queries run during seed.")
   .action((file, { strong, quiet }) => run("seed", program, { file, quiet, strong }));
+
+program
+  .command("repl")
+  .alias("r")
+  .description("Start a REPL session with RethinkDB")
+  .action(() => run("repl"));
 
 program.parse(process.argv);
 
