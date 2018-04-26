@@ -1,6 +1,6 @@
 {
   "name": "recl",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "RethinkDB CLI and Utility",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
