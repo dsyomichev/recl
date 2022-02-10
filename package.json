@@ -7,15 +7,17 @@
   "scripts": {
     "start": "node bin/recl",
     "build": "node build/build.js",
-    "prepublishOnly": "yarn build"
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dsyomichev/recl.git"
+    "url": "https://gitlab.com/dsyomichev/recl"
   },
   "keywords": [
-    "RethinkDB",
-    "CLI"
+    "rethink",
+    "db",
+    "cli",
+    "repl"
   ],
   "author": {
     "name": "Daniel Syomichev",
@@ -28,9 +30,6 @@
   "homepage": "https://github.com/dsyomichev/recl#readme",
   "bin": "./bin/recl",
   "dependencies": {
-    "@types/cli-spinner": "^0.2.0",
-    "@types/inquirer": "^0.0.41",
-    "@types/rethinkdbdash": "types/rethinkdbdash",
     "boxen": "^1.3.0",
     "chalk": "^2.4.1",
     "cli-spinner": "^0.2.8",
@@ -41,6 +40,9 @@
     "rethinkdbdash": "^2.3.31"
   },
   "devDependencies": {
+    "@types/cli-spinner": "^0.2.0",
+    "@types/inquirer": "^0.0.41",
+    "@types/rethinkdbdash": "types/rethinkdbdash",
     "dts-generator": "^2.1.0",
     "fs-extra": "^5.0.0",
     "typescript": "^2.8.3"
