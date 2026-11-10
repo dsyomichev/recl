@@ -4,15 +4,6 @@ ReCL is a utility that allows for quick scaling of a RethinkDB database. Seed wi
 
 While data exploration tools do exist, I found them tedious and annoying to use to enter large amounts of data such as configurations, exprecially in a development environment. With plenty of configurations, ReCL can quickly build up a database from a single `.js` or `.json` file, rather than entering the data by hand.
 
-### Installing
-
-The utility can be installed using npm or yarn.
-
-```
-npm install -g recl
-yarn global add recl
-```
-
 # Interactive Console - REPL
 
 Simply running the cli in the command line, without any commands, starts a REPL. This is the key to quick interactions with RethinkDB. The commands are exactly like the rethink JavaScript driver. Simply enter the queries in the `r.db("dbName")...` format. If successful, a prettyprinted and highlighted output will be printed with the result. For example, to get a document with an ID of 12345, from the table "users", and the database "info", `r.db("info").table("users").get(12345)` should be run. Whatever the result from RethinkDB will be, it will be printed in the console.
@@ -25,7 +16,7 @@ Connected to RethinkDB @ localhost:28015
 >  r.db("info").table("users")
 >> Completed in 99ms.
     [Table object goes here.]
->  
+>
 ```
 
 # Commands

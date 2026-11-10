@@ -2,10 +2,11 @@
   "compilerOptions": {
     "target": "ES2017",
     "module": "commonjs",
+    "rootDir": "/lib",
     "outDir": "./dist",
     "strict": true,
     "strictPropertyInitialization": false
   },
-  "include": ["lib/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [ "lib/**/*.ts" ],
+  "exclude": [ "node_modules" ]
 }
